@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Agentic Workflow Demo</title>
+  <style>
+    :root {
+      --bg: #f7f8fb;
+      --panel: #ffffff;
+      --panel2: #f3f5f9;
+      --text: #2a2f3a;
+      --muted: #8a93a6;
+      --accent: #7aa7e8;
+      --accent-text: #ffffff;
+      --ok: #7cc4a0;
+      --warn: #e6c46a;
+      --err: #e29a9a;
+      --line: #e6e9f0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .wrap {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 32px 24px 64px;
+    }
+    h1 {
+      margin: 0 0 4px;
+      font-size: 28px;
+      letter-spacing: -0.02em;
+    }
+    .sub {
+      color: var(--muted);
+      margin: 0 0 28px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 820px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 1px 2px rgba(20, 30, 60, 0.03);
+    }
+    .card h2 {
+      margin: 0 0 14px;
+      font-size: 16px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+    }
+    label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin: 12px 0 4px;
+    }
+    input {
+      width: 100%;
+      background: var(--panel2);
+      border: 1px solid var(--line);
+      color: var(--text);
+      padding: 9px 11px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    input:focus { outline: 2px solid var(--accent); border-color: transparent; }
+    button {
+      width: 100%;
+      margin-top: 18px;
+      background: var(--accent);
+      color: var(--accent-text);
+      font-weight: 600;
+      border: none;
+      padding: 11px;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: filter 0.15s;
+    }
+    button:hover:not(:disabled) { filter: brightness(1.1); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .steps { display: flex; flex-direction: column; gap: 10px; }
+    .step {
+      background: var(--panel2);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      transition: border-color 0.2s;
+    }
+    .step.active { border-color: var(--accent); }
+    .step.ok { border-color: var(--ok); }
+    .step.warn { border-color: var(--warn); }
+    .step.err { border-color: var(--err); }
+    .badge {
+      width: 28px; height: 28px;
+      border-radius: 999px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700;
+      background: var(--line); color: var(--muted);
+      flex-shrink: 0;
+    }
+    .step.active .badge { background: var(--accent); color: #ffffff; }
+    .step.ok .badge { background: var(--ok); color: #ffffff; }
+    .step.warn .badge { background: var(--warn); color: #ffffff; }
+    .step.err .badge { background: var(--err); color: #ffffff; }
+    .step-body { flex: 1; min-width: 0; }
+    .step-title { font-weight: 600; font-size: 14px; }
+    .step-status { color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .step-data {
+      margin-top: 8px;
+      background: rgba(0,0,0,0.25);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-family: 'SF Mono', Menlo, Consolas, monospace;
+      font-size: 12px;
+      color: #cbd5ff;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .spinner {
+      width: 12px; height: 12px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-top-color: #ffffff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .summary {
+      margin-top: 16px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+    .summary.ok { background: rgba(74,222,128,0.1); color: var(--ok); border: 1px solid rgba(74,222,128,0.3); }
+    .summary.err { background: rgba(248,113,113,0.1); color: var(--err); border: 1px solid rgba(248,113,113,0.3); }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td {
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--line);
+      white-space: nowrap;
+    }
+    th { color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; font-size: 11px; }
+    td.mono { font-family: 'SF Mono', Menlo, Consolas, monospace; }
+    .pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; }
+    .pill.completed { background: rgba(74,222,128,0.15); color: var(--ok); }
+    .pill.aborted { background: rgba(248,113,113,0.15); color: var(--err); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Agentic Workflow Engine</h1>
+    <p class="sub">Deterministic multi-API pipeline · Payment → Tracking → SMS → Slack</p>
+
+    <div class="grid">
+      <form class="card" id="orderForm">
+        <h2>Order</h2>
+        <label for="product">Product</label>
+        <input id="product" value="Demo Item" required />
+        <label for="price">Price (USD)</label>
+        <input id="price" type="number" value="10" min="0" step="0.01" required />
+        <label for="email">Email</label>
+        <input id="email" type="email" value="test@example.com" required />
+        <label for="phone">Phone</label>
+        <input id="phone" value="+15550000000" required />
+        <label for="address">Address</label>
+        <input id="address" value="San Francisco" required />
+        <button type="submit" id="runBtn">Run Workflow</button>
+      </form>
+
+      <div class="card">
+        <h2>Pipeline</h2>
+        <div class="steps" id="steps">
+          <div class="step" data-step="1">
+            <div class="badge">1</div>
+            <div class="step-body">
+              <div class="step-title">Payment Processing</div>
+              <div class="step-status">Waiting…</div>
+            </div>
+          </div>
+          <div class="step" data-step="2">
+            <div class="badge">2</div>
+            <div class="step-body">
+              <div class="step-title">Shipment Tracking</div>
+              <div class="step-status">Waiting…</div>
+            </div>
+          </div>
+          <div class="step" data-step="3">
+            <div class="badge">3</div>
+            <div class="step-body">
+              <div class="step-title">SMS Notification (Twilio)</div>
+              <div class="step-status">Waiting…</div>
+            </div>
+          </div>
+          <div class="step" data-step="4">
+            <div class="badge">4</div>
+            <div class="step-body">
+              <div class="step-title">Slack Notification</div>
+              <div class="step-status">Waiting…</div>
+            </div>
+          </div>
+        </div>
+        <div id="summary"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 20px;">
+      <h2 style="display:flex;justify-content:space-between;align-items:center;">
+        <span>Order History</span>
+        <button id="refreshBtn" style="width:auto;margin:0;padding:6px 12px;font-size:12px;">Refresh</button>
+      </h2>
+      <div id="history" style="overflow-x:auto;">
+        <div style="color:var(--muted);font-size:13px;">Loading…</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('orderForm');
+    const runBtn = document.getElementById('runBtn');
+    const summaryEl = document.getElementById('summary');
+
+    function resetSteps() {
+      summaryEl.innerHTML = '';
+      document.querySelectorAll('.step').forEach((el) => {
+        el.classList.remove('active', 'ok', 'warn', 'err');
+        el.querySelector('.step-status').textContent = 'Waiting…';
+        const old = el.querySelector('.step-data');
+        if (old) old.remove();
+      });
+    }
+
+    function stepEl(n) { return document.querySelector(`.step[data-step="${n}"]`); }
+
+    function setStatus(n, cls, text, data) {
+      const el = stepEl(n);
+      if (!el) return;
+      el.classList.remove('active', 'ok', 'warn', 'err');
+      el.classList.add(cls);
+      el.querySelector('.step-status').textContent = text;
+      const oldData = el.querySelector('.step-data');
+      if (oldData) oldData.remove();
+      if (data) {
+        const d = document.createElement('div');
+        d.className = 'step-data';
+        d.textContent = JSON.stringify(data, null, 2);
+        el.querySelector('.step-body').appendChild(d);
+      }
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      resetSteps();
+      runBtn.disabled = true;
+      runBtn.textContent = 'Running…';
+
+      const order = {
+        product: document.getElementById('product').value,
+        price: Number(document.getElementById('price').value),
+        email: document.getElementById('email').value,
+        phone: document.getElementById('phone').value,
+        address: document.getElementById('address').value,
+      };
+
+      try {
+        const resp = await fetch('/api/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(order),
+        });
+
+        if (!resp.ok || !resp.body) {
+          const text = await resp.text();
+          summaryEl.innerHTML = `<div class="summary err">Request failed: ${text}</div>`;
+          return;
+        }
+
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+
+          let idx;
+          while ((idx = buffer.indexOf('\n\n')) !== -1) {
+            const raw = buffer.slice(0, idx).trim();
+            buffer = buffer.slice(idx + 2);
+            if (!raw.startsWith('data:')) continue;
+            const json = raw.slice(5).trim();
+            if (!json) continue;
+            let evt;
+            try { evt = JSON.parse(json); } catch { continue; }
+            handleEvent(evt);
+          }
+        }
+      } catch (err) {
+        summaryEl.innerHTML = `<div class="summary err">${err.message}</div>`;
+      } finally {
+        runBtn.disabled = false;
+        runBtn.textContent = 'Run Workflow';
+      }
+    });
+
+    async function loadHistory() {
+      const el = document.getElementById('history');
+      try {
+        const resp = await fetch('/api/orders');
+        const { orders } = await resp.json();
+        if (!orders.length) {
+          el.innerHTML = '<div style="color:var(--muted);font-size:13px;">No orders yet.</div>';
+          return;
+        }
+        const rows = orders.map((o) => `
+          <tr>
+            <td>${o.id}</td>
+            <td><span class="pill ${o.status}">${o.status}</span></td>
+            <td>${o.product}</td>
+            <td>$${o.price}</td>
+            <td>${o.email}</td>
+            <td class="mono">${o.payment_ref ?? '—'}</td>
+            <td class="mono">${o.tracking_number ?? '—'}</td>
+            <td class="mono">${o.slack_ts ?? '—'}</td>
+            <td>${new Date(o.created_at).toLocaleString()}</td>
+          </tr>
+        `).join('');
+        el.innerHTML = `
+          <table>
+            <thead><tr>
+              <th>#</th><th>Status</th><th>Product</th><th>Price</th><th>Email</th>
+              <th>Payment Ref</th><th>Tracking</th><th>Slack ts</th><th>Created</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>`;
+      } catch (err) {
+        el.innerHTML = `<div style="color:var(--err);font-size:13px;">Failed to load: ${err.message}</div>`;
+      }
+    }
+    document.getElementById('refreshBtn').addEventListener('click', loadHistory);
+    loadHistory();
+
+    function handleEvent(evt) {
+      switch (evt.type) {
+        case 'step-start':
+          setStatus(evt.step, 'active', 'Running…');
+          break;
+        case 'step-success':
+          setStatus(evt.step, 'ok', 'Completed', evt.data);
+          break;
+        case 'step-skipped':
+          setStatus(evt.step, 'warn', `Skipped — ${evt.reason}`);
+          break;
+        case 'step-error':
+          setStatus(evt.step, 'err', `Error: ${evt.message}`);
+          break;
+        case 'complete':
+          summaryEl.innerHTML = `<div class="summary ok">Workflow complete — order #${evt.result.orderId ?? '?'} saved at ${new Date(evt.result.completedAt).toLocaleTimeString()}</div>`;
+          loadHistory();
+          break;
+        case 'aborted':
+          summaryEl.innerHTML = `<div class="summary err">${evt.message}</div>`;
+          loadHistory();
+          break;
+        case 'fatal':
+          summaryEl.innerHTML = `<div class="summary err">Fatal: ${evt.message}</div>`;
+          break;
+      }
+    }
+  </script>
+</body>
+</html>
